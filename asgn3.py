@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import random
 
 ''' TODO
  * implement q-learning
@@ -9,75 +10,117 @@ import matplotlib.pyplot as plt
 # "REFERENCES"
 # https://github.com/vinhvu200/Windy-Grid-World/blob/master/Q-Learning.ipynb
 # https://github.com/MarcusCramer91/WindyGridworld/blob/master/src/WindyGW_Sarsa.py
+# https://github.com/dennybritz/reinforcement-learning
 
 
-class Gridworld:
-    def __init__(self):
-        self.world_width = 10
-        self.world_height = 7
-        self.current_position = (3, 0)
+class WindyGridworld:
+    def __init__(self, kings_moves):
+        self.width = 10
+        self.height = 7
+        self.state = (3, 0)
         self.winds = (0, 0, 0, 1, 1, 1, 2, 2, 1, 0)
-        self.FINAL_POSITION = (3, 7)
+        self.goal = (3, 7)
+        self.kings_moves = kings_moves
 
-    def is_final_position(self):
-        if (self.current_position == self.FINAL_POSITION):
+    def at_goal(self):
+        if (self.state == self.goal):
             return True
 
-    # actually move the actor in the world
     def move(self, move):
-        new_position = list(self.current_position)
-        if move == "up":
-            new_position[0] = self.current_position[0] - 1
-        elif move == "down":
-            new_position[0] = self.current_position[0] + 1
-        elif move == "left":
-            new_position[1] = self.current_position[1] - 1
+        if not self.kings_moves:
+            new_position = list(self.state)
+            if move == "N":
+                new_position[0] = self.state[0] - 1
+            elif move == "S":
+                new_position[0] = self.state[0] + 1
+            elif move == "W":
+                new_position[1] = self.state[1] - 1
+            else:
+                new_position[1] = self.state[1] + 1
+            # apply winds to the current position
+            new_position[0] -= self.winds[new_position[1]]
         else:
-            new_position[1] = self.current_position[1] + 1
-
-        # apply winds to the current position
-        new_position[0] -= self.winds[new_position[1]]
+            new_position = list(self.state)
+            if move == "N":
+                new_position[0] = self.state[0] - 1
+            elif move == "S":
+                new_position[0] = self.state[0] + 1
+            elif move == "W":
+                new_position[1] = self.state[1] - 1
+            elif move == "E":
+                new_position[1] = self.state[1] + 1
+            elif move == "NE":
+                new_position[0] = self.state[0] - 1
+                new_position[1] = self.state[1] + 1
+            elif move == "NW":
+                new_position[0] = self.state[0] - 1
+                new_position[1] = self.state[1] - 1
+            elif move == "SE":
+                new_position[0] = self.state[0] + 1
+                new_position[1] = self.state[1] + 1
+            else:
+                new_position[0] = self.state[0] + 1
+                new_position[1] = self.state[1] - 1
+            # apply stochastic winds to the current position
+            r = random.randint(1, 3)
+            if r == 1:
+                # 1/3 of the time, apply normal wind
+                new_position[0] -= self.winds[new_position[1]]
+            elif r == 2:
+                # 1/3 of the time, apply normal wind +1
+                new_position[0] -= (self.winds[new_position[1]] + 1)
+            else:
+                # 1/3 of the time, apply normal wind -1
+                new_position[0] -= (self.winds[new_position[1]] - 1)
 
         # ensure that the map cannot be left
-        if new_position[0] < 0:
+        if new_position[0] < 0 or new_position[0] > (self.height-1):
             new_position[0] = 0
-        self.current_position = tuple(new_position)
-
+        self.state = tuple(new_position)
         # determine reward contribution
-        if (self.is_final_position()):
+        if (self.at_goal()):
             reward = 1
         else:
             reward = -1
-        return (self.current_position, reward)
+        return (self.state, reward)
 
     def get_possible_moves(self, state):
         possible_moves = []
         if state[0] != 0:
-            possible_moves.append("up")
-        if state[0] != (self.world_height - 1):
-            possible_moves.append("down")
+            possible_moves.append("N")
+        if state[0] != (self.height - 1):
+            possible_moves.append("S")
         if state[1] != 0:
-            possible_moves.append("left")
-        if state[1] != (self.world_width - 1):
-            possible_moves.append("right")
+            possible_moves.append("W")
+        if state[1] != (self.width - 1):
+            possible_moves.append("E")
+        if self.kings_moves:
+            if state[0] != 0 and state[1] != (self.width - 1):
+                possible_moves.append("NE")
+            if state[0] != 0 and state[1] != 0:
+                possible_moves.append("NW")
+            if state[0] != (self.height - 1) and state[1] != (self.width - 1):
+                possible_moves.append("SE")
+            if state[0] != (self.height - 1) and state[1] != 0:
+                possible_moves.append("NW")
         return possible_moves
 
     def get_world_dimensions(self):
-        return self.world_height, self.world_width
+        return self.height, self.width
 
     def reset(self):
-        self.current_position = (3, 0)
+        self.state = (3, 0)
 
     def get_possible_states(self):
         states = []
-        for height in range(self.world_height):
-            for width in range(self.world_width):
+        for height in range(self.height):
+            for width in range(self.width):
                 states.append((height, width))
         return states
 
 
 class Agent:
-    def __init__(self, epsilon, alpha, world: Gridworld):
+    def __init__(self, epsilon, alpha, world: WindyGridworld):
         self.epsilon = epsilon
         self.alpha = alpha
         self.world = world
@@ -96,15 +139,24 @@ class Agent:
 
     def max_Q(self, Q, state):
         max_value = -99999
-        max_action = "up"
+        max_action = "N"
         for k, v in Q[state].items():
             if v > max_value:
                 max_value = v
                 max_action = k
         return max_action
 
+    def max_Q_value(self, Q, state):
+        max_value = -99999
+        max_action = "N"
+        for k, v in Q[state].items():
+            if v > max_value:
+                max_value = v
+                max_action = k
+        return max_value
+
     def get_move_epsilon_greedy(self, epsilon, position):
-        possible_moves = self.world.get_possible_moves(world.current_position)
+        possible_moves = self.world.get_possible_moves(world.state)
         rand = np.random.rand()
         if (rand < epsilon):
             move = possible_moves[np.random.choice(len(possible_moves))]
@@ -121,25 +173,57 @@ class Agent:
         nSteps = 0
         while True:
             nSteps += 1
-            current_position = world.current_position[:]
+            state = world.state[:]
             # move the player
             move = self.get_move_epsilon_greedy(
-                epsilon/iteration, current_position)
+                epsilon/iteration, state)
             tmp = self.world.move(move)
             visiting[tmp[0][0], tmp[0][1]] += 1
             reward = tmp[1]
             # get the action for the next state
-            next_position = world.current_position[:]
+            next_position = world.state[:]
             next_move = self.get_move_epsilon_greedy(
                 epsilon/iteration, next_position)
 
             # update SARSA rule
-            self.Q[current_position][move] = self.Q[current_position][move] + alpha * \
+            self.Q[state][move] = self.Q[state][move] + alpha * \
                 (reward + gamma * self.Q[next_position][next_move] -
-                 self.Q[current_position][move])
+                 self.Q[state][move])
 
             rewards.append(reward)
-            if self.world.is_final_position():
+            if self.world.at_goal():
+                break
+        return np.sum(rewards)
+
+    def Q_learning(self, iteration, gamma=0.5, alpha=0.5, epsilon=1):
+        visiting = np.zeros(self.world.get_world_dimensions())
+        self.world.reset()
+        rewards = []
+        state_history = []
+        visiting = np.zeros(self.world.get_world_dimensions())
+        nSteps = 0
+        while True:
+            nSteps += 1
+            state = world.state[:]
+            # move the player
+            move = self.get_move_epsilon_greedy(
+                epsilon/iteration, state)
+            tmp = self.world.move(move)
+            visiting[tmp[0][0], tmp[0][1]] += 1
+            reward = tmp[1]
+            # get the action for the next state
+            next_position = world.state[:]
+            next_move = self.get_move_epsilon_greedy(
+                epsilon/iteration, next_position)
+
+            # TD Update
+            td_target = reward + gamma * \
+                self.max_Q_value(self.Q, next_position)
+            td_error = td_target - self.Q[state][move]
+            self.Q[state][move] += alpha * td_error
+
+            rewards.append(reward)
+            if self.world.at_goal():
                 break
         return np.sum(rewards)
 
@@ -151,11 +235,11 @@ class Agent:
         while True:
             t += 1
             move = self.get_move_epsilon_greedy(
-                epsilon=0, position=self.world.current_position[:])
+                epsilon=0, position=self.world.state[:])
             tmp = self.world.move(move)
             visiting[tmp[0][0], tmp[0][1]] = t
             rewards.append(tmp[1])
-            if self.world.is_final_position():
+            if self.world.at_goal():
                 break
 
         reward = np.sum(rewards)
@@ -164,12 +248,12 @@ class Agent:
 # Logging functionality
 
 
-def print_world(world: Gridworld):
+def print_world(world: WindyGridworld):
     dim = world.get_world_dimensions()
     print("----------------------------------------")
     for i in range(dim[0]):
         for j in range(dim[1]):
-            if (world.current_position == (i, j)):
+            if (world.state == (i, j)):
                 print("X", end="\t")
             else:
                 print("0", end="\t")
@@ -180,7 +264,7 @@ def print_world(world: Gridworld):
 
 
 # Logging functionality
-def print_path(world: Gridworld, visiting):
+def print_path(world: WindyGridworld, visiting):
     dim = world.get_world_dimensions()
     print("Path taken:")
     print("----------------------------------------")
@@ -193,7 +277,7 @@ def print_path(world: Gridworld, visiting):
 
 
 if __name__ == '__main__':
-    world = Gridworld()
+    world = WindyGridworld(kings_moves=True)
     player = Agent(epsilon=.1, alpha=.2, world=world)
     training_rounds = np.arange(1, 1001, 1)
 
@@ -201,6 +285,25 @@ if __name__ == '__main__':
     for round in training_rounds:
         rewards.append(player.sarsa(iteration=round,
                                     epsilon=1, gamma=0.5, alpha=0.5))
+
+    print("Training done")
+    ret = player.follow_optimal_policy()
+    print("Reward is", ret[0])
+
+    # print out optimal path chosen
+    print_path(player.world, ret[1])
+
+    plt.plot(rewards)
+    plt.show()
+
+    world = WindyGridworld(kings_moves=True)
+    player = Agent(epsilon=0.05, alpha=0.5, world=world)
+    training_rounds = np.arange(1, 1001, 1)
+
+    rewards = []
+    for round in training_rounds:
+        rewards.append(player.Q_learning(iteration=round,
+                                         epsilon=0.05, gamma=0.9, alpha=0.5))
 
     print("Training done")
     ret = player.follow_optimal_policy()
