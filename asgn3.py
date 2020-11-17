@@ -2,16 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random
 
-''' TODO
- * implement q-learning
- * implement stochastic wind + king's moves variation
- * win
-'''
-# "REFERENCES"
-# https://github.com/vinhvu200/Windy-Grid-World/blob/master/Q-Learning.ipynb
-# https://github.com/MarcusCramer91/WindyGridworld/blob/master/src/WindyGW_Sarsa.py
-# https://github.com/dennybritz/reinforcement-learning
-
 
 class WindyGridworld:
     def __init__(self, kings_moves):
@@ -38,7 +28,7 @@ class WindyGridworld:
             else:
                 new_position[1] = self.state[1] + 1
             # apply winds to the current position
-            new_position[0] -= self.winds[new_position[1]]
+            new_position[0] -= self.winds[self.state[1]]
         else:
             new_position = list(self.state)
             if move == "N":
@@ -62,16 +52,17 @@ class WindyGridworld:
                 new_position[0] = self.state[0] + 1
                 new_position[1] = self.state[1] - 1
             # apply stochastic winds to the current position
-            r = random.randint(1, 3)
-            if r == 1:
-                # 1/3 of the time, apply normal wind
-                new_position[0] -= self.winds[new_position[1]]
-            elif r == 2:
-                # 1/3 of the time, apply normal wind +1
-                new_position[0] -= (self.winds[new_position[1]] + 1)
-            else:
-                # 1/3 of the time, apply normal wind -1
-                new_position[0] -= (self.winds[new_position[1]] - 1)
+            if self.winds[self.state[1]] > 0:
+                r = random.randint(1, 3)
+                if r == 1:
+                    # 1/3 of the time, apply normal wind
+                    new_position[0] -= self.winds[self.state[1]]
+                elif r == 2:
+                    # 1/3 of the time, apply normal wind +1
+                    new_position[0] -= (self.winds[self.state[1]] + 1)
+                else:
+                    # 1/3 of the time, apply normal wind -1
+                    new_position[0] -= (self.winds[self.state[1]] - 1)
 
         # ensure that the map cannot be left
         if new_position[0] < 0 or new_position[0] > (self.height-1):
@@ -277,7 +268,7 @@ def print_path(world: WindyGridworld, visiting):
 
 
 if __name__ == '__main__':
-    world = WindyGridworld(kings_moves=True)
+    world = WindyGridworld(kings_moves=False)
     player = Agent(epsilon=.1, alpha=.2, world=world)
     training_rounds = np.arange(1, 1001, 1)
 
