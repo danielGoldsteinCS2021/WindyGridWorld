@@ -168,7 +168,7 @@ class Agent:
             rewards.append(reward)
             if self.environment.state == self.environment.goal:
                 break
-        return np.sum(rewards)
+        return np.sum(rewards), nSteps
 
     def Q_learning(self, iteration, gamma=0.5, alpha=0.5, epsilon=1):
         visits = np.zeros((self.environment.height, self.environment.width))
@@ -199,7 +199,7 @@ class Agent:
             rewards.append(reward)
             if self.environment.state == self.environment.goal:
                 break
-        return np.sum(rewards)
+        return np.sum(rewards), nSteps
 
     def optimal_policy(self):
         self.environment.state = (3, 0)  # Reset agent's position
@@ -234,14 +234,19 @@ def pathPrinter(world: WindyGridworld, visiting):
 
 
 if __name__ == '__main__':
+    print("4 moves - SARSA")
     world = WindyGridworld(kings_moves=False)
     player = Agent(epsilon=.1, alpha=.2, environment=world)
     rounds = np.arange(1, 1001, 1)
 
     rewards = []
+
+    steps = []
     for r in rounds:
-        rewards.append(player.sarsa(iteration=r,
-                                    epsilon=1, gamma=0.5, alpha=0.5))
+        _return = player.sarsa(iteration=r,
+                               epsilon=1, gamma=0.5, alpha=0.5)
+        rewards.append(_return[0])
+        steps.append(_return[1])
 
     print("Training complete")
     policy = player.optimal_policy()
@@ -249,25 +254,74 @@ if __name__ == '__main__':
 
     # print out optimal path chosen
     pathPrinter(player.environment, policy[1])
-
-    plt.plot(rewards)
+    plt.xlabel('Episodes')
+    plt.ylabel('Time Steps')
+    plt.plot(steps)
     plt.show()
 
+    print("4 moves - Q-Learning")
+    world = WindyGridworld(kings_moves=False)
+    player = Agent(epsilon=.1, alpha=.2, world=world)
+    rounds = np.arange(1, 1001, 1)
+    rewards = []
+    steps = []
+    for round in rounds:
+        _return = player.Q_learning(iteration=round,
+                                    epsilon=1, gamma=0.5, alpha=0.5)
+        rewards.append(_return[0])
+        steps.append(_return[1])
+
+    print("Training complete")
+    policy = player.optimal_policy()
+    print("Reward:", policy[0])
+    # print out optimal path chosen
+    vizualize_path(player.world, policy[1])
+    plt.xlabel('Episodes')
+    plt.ylabel('Time Steps')
+    plt.plot(steps)
+    plt.show()
+
+    print("King's Moves, Stochastic Wind - SARSA")
     world = WindyGridworld(kings_moves=True)
     player = Agent(epsilon=0.05, alpha=0.5, environment=world)
     rounds = np.arange(1, 1001, 1)
-
     rewards = []
-    for r in rounds:
-        rewards.append(player.Q_learning(iteration=r,
-                                         epsilon=0.05, gamma=0.9, alpha=0.5))
 
+    steps = []
+    for r in rounds:
+        _return = player.sarsa(iteration=r,
+                               epsilon=0.05, gamma=0.9, alpha=0.5)
+        rewards.append(_return[0])
+        steps.append(_return[1])
+        
     print("Training complete")
     policy = player.optimal_policy()
     print("Reward:", policy[0])
-
     # print out optimal path chosen
     pathPrinter(player.environment, policy[1])
+    vizualize_path(player.world, policy[1])
+    plt.xlabel('Episodes')
+    plt.ylabel('Time Steps')
+    plt.plot(steps)
+    plt.show()
 
-    plt.plot(rewards)
+    print("King's Moves, Stochastic Wind - Q-Learning")
+    world = WindyGridworld(kings_moves=True)
+    player = Agent(epsilon=0.05, alpha=0.5, world=world)
+    rounds = np.arange(1, 1001, 1)
+    rewards = []
+    steps = []
+    for round in rounds:
+        _return = player.Q_learning(iteration=round,
+                                    epsilon=0.05, gamma=0.9, alpha=0.5)
+        rewards.append(_return[0])
+        steps.append(_return[1])
+    print("Training complete")
+    policy = player.optimal_policy()
+    print("Reward:", policy[0])
+    # print out optimal path chosen
+    vizualize_path(player.world, policy[1])
+    plt.xlabel('Episodes')
+    plt.ylabel('Time Steps')
+    plt.plot(steps)
     plt.show()
