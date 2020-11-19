@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import random
 
 
-class WindyGridworld:
+class Env:
     def __init__(self, kings_moves):
         self.kings_moves = kings_moves
         self.state = (3, 0)
@@ -106,7 +106,7 @@ class WindyGridworld:
 
 
 class Agent:
-    def __init__(self, epsilon, alpha, environment: WindyGridworld):
+    def __init__(self, epsilon, alpha, environment: Env):
         self.epsilon = epsilon
         self.alpha = alpha
         self.environment = environment
@@ -222,7 +222,7 @@ class Agent:
         return reward, visits
 
 
-def pathPrinter(world: WindyGridworld, visiting):
+def pathPrinter(world: Env, visiting):
     # Print the path the agent takes through the windy gridworld
     dimensions = (world.height, world.width)
     print("\n")
@@ -237,7 +237,7 @@ def pathPrinter(world: WindyGridworld, visiting):
 
 if __name__ == '__main__':
     print("4 moves - SARSA")
-    world = WindyGridworld(kings_moves=False)
+    world = Env(kings_moves=False)
     player = Agent(epsilon=.1, alpha=.2, environment=world)
     rounds = np.arange(1, 1001, 1)
 
@@ -262,7 +262,7 @@ if __name__ == '__main__':
     plt.show()
 
     print("4 moves - Q-Learning")
-    world = WindyGridworld(kings_moves=False)
+    world = Env(kings_moves=False)
     player = Agent(epsilon=.1, alpha=.2, environment=world)
     rounds = np.arange(1, 1001, 1)
     rewards = []
@@ -284,7 +284,7 @@ if __name__ == '__main__':
     plt.show()
 
     print("King's Moves, Stochastic Wind - SARSA")
-    world = WindyGridworld(kings_moves=True)
+    world = Env(kings_moves=True)
     player = Agent(epsilon=0.05, alpha=0.5, environment=world)
     rounds = np.arange(1, 1001, 1)
     rewards = []
@@ -307,7 +307,7 @@ if __name__ == '__main__':
     plt.show()
 
     print("King's Moves, Stochastic Wind - Q-Learning")
-    world = WindyGridworld(kings_moves=True)
+    world = Env(kings_moves=True)
     player = Agent(epsilon=0.05, alpha=0.5, environment=world)
     rounds = np.arange(1, 1001, 1)
     rewards = []
