@@ -11,7 +11,8 @@ class WindyGridworld:
         self.goal = (3, 7)
         self.width = 10
         self.height = 7
-        self.possible_states = [(h, w) for h in range(self.height) for w in range(self.width)]
+        self.possible_states = [(h, w) for h in range(
+            self.height) for w in range(self.width)]
 
     def action(self, action):
         if not self.kings_moves:
@@ -64,7 +65,8 @@ class WindyGridworld:
         # Stop at walls
         if new_state[0] < 0 or new_state[0] > self.height-1:
             new_state[0] = 0
-        self.state = tuple(new_state)  # Ensures state is still a hashable object
+        # Ensures state is still a hashable object
+        self.state = tuple(new_state)
 
         if self.state == self.goal:
             reward = 1
@@ -261,7 +263,7 @@ if __name__ == '__main__':
 
     print("4 moves - Q-Learning")
     world = WindyGridworld(kings_moves=False)
-    player = Agent(epsilon=.1, alpha=.2, world=world)
+    player = Agent(epsilon=.1, alpha=.2, environment=world)
     rounds = np.arange(1, 1001, 1)
     rewards = []
     steps = []
@@ -275,7 +277,7 @@ if __name__ == '__main__':
     policy = player.optimal_policy()
     print("Reward:", policy[0])
     # print out optimal path chosen
-    vizualize_path(player.world, policy[1])
+    pathPrinter(player.environment, policy[1])
     plt.xlabel('Episodes')
     plt.ylabel('Time Steps')
     plt.plot(steps)
@@ -293,13 +295,12 @@ if __name__ == '__main__':
                                epsilon=0.05, gamma=0.9, alpha=0.5)
         rewards.append(_return[0])
         steps.append(_return[1])
-        
+
     print("Training complete")
     policy = player.optimal_policy()
     print("Reward:", policy[0])
     # print out optimal path chosen
     pathPrinter(player.environment, policy[1])
-    vizualize_path(player.world, policy[1])
     plt.xlabel('Episodes')
     plt.ylabel('Time Steps')
     plt.plot(steps)
@@ -307,7 +308,7 @@ if __name__ == '__main__':
 
     print("King's Moves, Stochastic Wind - Q-Learning")
     world = WindyGridworld(kings_moves=True)
-    player = Agent(epsilon=0.05, alpha=0.5, world=world)
+    player = Agent(epsilon=0.05, alpha=0.5, environment=world)
     rounds = np.arange(1, 1001, 1)
     rewards = []
     steps = []
@@ -320,7 +321,7 @@ if __name__ == '__main__':
     policy = player.optimal_policy()
     print("Reward:", policy[0])
     # print out optimal path chosen
-    vizualize_path(player.world, policy[1])
+    pathPrinter(player.environment, policy[1])
     plt.xlabel('Episodes')
     plt.ylabel('Time Steps')
     plt.plot(steps)
