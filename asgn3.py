@@ -15,7 +15,10 @@ class Env:
             self.height) for w in range(self.width)]
 
     def action(self, action):
+        # Updates player's state according to action parameter
+        # Handles king's moves and stochastic wind if applicable
         if not self.kings_moves:
+            # 4 moves case with deterministic wind
             new_state = list(self.state)
             if action == "N":
                 new_state[0] = self.state[0] - 1
@@ -28,6 +31,7 @@ class Env:
             # apply winds to the current position
             new_state[0] -= self.winds[self.state[1]]
         else:
+            # King's moves case with stochastic wind
             new_state = list(self.state)
             if action == "N":
                 new_state[0] = self.state[0] - 1
@@ -116,6 +120,7 @@ class Agent:
         self.Q = self.initialize_Q(self.environment.possible_states)
 
     def initialize_Q(self, states):
+        # Initializes state-action value function by traversing environment
         Q = {}
         for s in states:
             Q[s] = {}
@@ -125,6 +130,7 @@ class Agent:
         return Q
 
     def max_Q(self, Q, state):
+        # Returns the optimal action and value based on the given state
         max_value = -6969
         max_action = "N"
         for k, v in Q[state].items():
@@ -134,6 +140,7 @@ class Agent:
         return max_action, max_value
 
     def epsilon_greedy(self, epsilon, position):
+        # Returns an action based on epsilon greedy approach
         possible_actions = self.environment.possible_actions(world.state)
         r = np.random.rand()
         if r < epsilon:
@@ -143,6 +150,7 @@ class Agent:
         return action
 
     def sarsa(self, iteration, gamma=0.5, alpha=0.5, epsilon=1):
+        # Applies SARSA algorithm and returns the total reward and number of steps taken
         visits = np.zeros((self.environment.height, self.environment.width))
         self.environment.state = (3, 0)  # Reset agent's position
         rewards = []
@@ -173,6 +181,7 @@ class Agent:
         return np.sum(rewards), nSteps
 
     def Q_learning(self, iteration, gamma=0.5, alpha=0.5, epsilon=1):
+        # Applies Q-Learning algorithm and returns the total reward and number of steps taken
         visits = np.zeros((self.environment.height, self.environment.width))
         self.environment.state = (3, 0)  # Reset agent's position
         rewards = []
@@ -204,6 +213,9 @@ class Agent:
         return np.sum(rewards), nSteps
 
     def optimal_policy(self):
+        # Applies the optimal policy generated through either Q-Learning or SARSA
+        # Agent takes path following that policy
+        # Returns the given reward and visited grid locations
         self.environment.state = (3, 0)  # Reset agent's position
         rewards = []
         visits = np.zeros((self.environment.height, self.environment.width))
@@ -236,31 +248,30 @@ def pathPrinter(world: Env, visiting):
 
 
 if __name__ == '__main__':
+    '''4 Moves - Deterministic Wind - SARSA'''
     print("4 moves - SARSA")
     world = Env(kings_moves=False)
     player = Agent(epsilon=.1, alpha=.2, environment=world)
     rounds = np.arange(1, 1001, 1)
-
     rewards = []
-
     steps = []
     for r in rounds:
         _return = player.sarsa(iteration=r,
                                epsilon=1, gamma=0.5, alpha=0.5)
         rewards.append(_return[0])
         steps.append(_return[1])
-
     print("Training complete")
     policy = player.optimal_policy()
     print("Reward:", policy[0])
-
     # print out optimal path chosen
     pathPrinter(player.environment, policy[1])
+    # plot convergence
     plt.xlabel('Episodes')
     plt.ylabel('Time Steps')
     plt.plot(steps)
     plt.show()
 
+    '''4 Moves - Deterministic Wind - Q-Learning'''
     print("4 moves - Q-Learning")
     world = Env(kings_moves=False)
     player = Agent(epsilon=.1, alpha=.2, environment=world)
@@ -272,40 +283,41 @@ if __name__ == '__main__':
                                     epsilon=1, gamma=0.5, alpha=0.5)
         rewards.append(_return[0])
         steps.append(_return[1])
-
     print("Training complete")
     policy = player.optimal_policy()
     print("Reward:", policy[0])
     # print out optimal path chosen
     pathPrinter(player.environment, policy[1])
+    # plot convergence
     plt.xlabel('Episodes')
     plt.ylabel('Time Steps')
     plt.plot(steps)
     plt.show()
 
+    '''King's Moves - Stochastic Wind - SARSA'''
     print("King's Moves, Stochastic Wind - SARSA")
     world = Env(kings_moves=True)
     player = Agent(epsilon=0.05, alpha=0.5, environment=world)
     rounds = np.arange(1, 1001, 1)
     rewards = []
-
     steps = []
     for r in rounds:
         _return = player.sarsa(iteration=r,
                                epsilon=0.05, gamma=0.9, alpha=0.5)
         rewards.append(_return[0])
         steps.append(_return[1])
-
     print("Training complete")
     policy = player.optimal_policy()
     print("Reward:", policy[0])
     # print out optimal path chosen
     pathPrinter(player.environment, policy[1])
+    # plot convergence
     plt.xlabel('Episodes')
     plt.ylabel('Time Steps')
     plt.plot(steps)
     plt.show()
 
+    '''King's Moves - Stochastic Wind - Q-Learning'''
     print("King's Moves, Stochastic Wind - Q-Learning")
     world = Env(kings_moves=True)
     player = Agent(epsilon=0.05, alpha=0.5, environment=world)
@@ -322,6 +334,7 @@ if __name__ == '__main__':
     print("Reward:", policy[0])
     # print out optimal path chosen
     pathPrinter(player.environment, policy[1])
+    # plot convergence
     plt.xlabel('Episodes')
     plt.ylabel('Time Steps')
     plt.plot(steps)
